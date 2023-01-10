@@ -47,20 +47,28 @@ def timer(func):
 
 def gen_cache(dict_name):
     def decorate(func):
-        if not os.path.exists(dict_name):
-            rewrite_pkl(dict_name, {})
-
-        with open(dict_name, 'rb') as file:
-            dict_ = pickle.load(file)
-
         @wraps(func)
         def wrapper(*args, **kwargs):
+            global dict_
+
+            try:
+                dict_[f'{func.__name__}']
+            except (NameError, KeyError):
+                dict_ = {}
+
+            try:
+                with open(dict_name, 'rb') as file:
+                    dict_[f'{func.__name__}'] = pickle.load(file)
+            except (FileNotFoundError, EOFError):
+                rewrite_pkl(dict_name, {})
+                dict_[f'{func.__name__}'] = {}
+
             all_args = f'{args} {kwargs.keys()} {kwargs.values()}'
 
-            if all_args not in dict_:
-                dict_[all_args] = func(*args, **kwargs)
+            if all_args not in dict_[f'{func.__name__}']:
+                dict_[f'{func.__name__}'][all_args] = func(*args, **kwargs)
+                rewrite_pkl(dict_name, dict_[f'{func.__name__}'])
 
-            rewrite_pkl(dict_name, dict_)
-            return dict_[all_args]
+            return dict_[f'{func.__name__}'][all_args]
         return wrapper
     return decorate

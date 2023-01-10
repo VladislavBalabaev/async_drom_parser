@@ -1,3 +1,5 @@
+import geopy.exc
+
 from utils import data_path, rewrite_pkl, timer, gen_cache
 from classes import UrlsParser, CarsParser
 import httplib2
@@ -456,11 +458,11 @@ def execute_cars_processing():
     @gen_cache(f'{data_path}/cache/get_geocode.pkl')
     def get_geocode(location):
         nonlocal nomin
-        return nomin.geocode(location)
 
-    df['location'] = df['city'] \
-        .apply(lambda x: x[x.index(':') + 2:] + ', Россия') \
-        .apply(lambda x: get_geocode(x))
+        try:
+            return nomin.geocode(location)
+        except geopy.exc.GeocoderServiceError:
+            get_geocode(location)
 
     morph = pymorphy2.MorphAnalyzer()
 
@@ -469,9 +471,20 @@ def execute_cars_processing():
         nonlocal morph
         return morph.parse(x)[0].normal_form
 
+    df['location'] = df['city'] \
+        .apply(lambda x: x[x.index(':') + 2:]) \
+        .apply(lambda x: x[x.index(' в ') + len(' в '):] if ' в ' in x else x) \
+        .apply(lambda x: normal_form(x)) \
+        .apply(lambda x: get_geocode(x + ', Россия'))
+
+    print(f'city is checked')
+
     df.loc[df['location'].isna(), 'location'] = df.loc[df['location'].isna(), 'city_from_title'] \
-        .apply(lambda x: normal_form(x) + ', Россия') \
-        .apply(lambda x: get_geocode(x))
+        .apply(lambda x: x[x.index(' в ') + len(' в '):] if ' в ' in x else x) \
+        .apply(lambda x: normal_form(x)) \
+        .apply(lambda x: get_geocode(x + ', Россия'))
+
+    print(f'city_from_title is checked')
 
     df = df[~df['location'].isna()]
     df = df[df.location.apply(lambda x: 'Россия' in x[0])]
