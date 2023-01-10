@@ -8,7 +8,7 @@ import datetime
 from functools import wraps
 
 
-data_path = '/home/balabaev/WORK/1_at_NSU/2_Market_of_cars/Drom/data'
+data_path = '/home/balabaev/All/WORK/1_at_NSU/2_Market_of_cars/Drom/data'
 # data_path = os.environ['DATA_PATH']  # link, where you would store you cash files and results of parsing
 
 
@@ -55,7 +55,7 @@ def gen_cache(dict_name):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            all_args = (args, frozenset(kwargs.items()))
+            all_args = f'{args} {kwargs.keys()} {kwargs.values()}'
 
             if all_args not in dict_:
                 dict_[all_args] = func(*args, **kwargs)

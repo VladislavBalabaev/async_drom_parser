@@ -4,7 +4,7 @@ nest_asyncio.apply()
 
 
 # execution = [bool(int(os.environ[env])) for env in ['PAGES_P', 'URLS_P', 'PROXIES_P', 'CARS_P', 'CARS_PR']]
-execution = [1, 1, 1, 1, 1]
+execution = [0, 0, 0, 0, 1]
 
 print(
     f"""

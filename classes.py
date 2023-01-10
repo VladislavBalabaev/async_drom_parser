@@ -139,7 +139,8 @@ class CarsParser:
                 aiohttp.ClientPayloadError,
                 aiohttp.ClientConnectorError,
                 aiohttp.ClientOSError,
-                aiohttp.ClientHttpProxyError) as error:
+                aiohttp.ClientHttpProxyError,
+                aiohttp.ClientResponseError) as error:
             if self.print_error:
                 print(error)
             await asyncio.sleep(random() * 10)
@@ -155,7 +156,8 @@ class CarsParser:
                 aiohttp.ClientPayloadError,
                 aiohttp.ClientConnectorError,
                 aiohttp.ClientOSError,
-                aiohttp.ClientHttpProxyError):
+                aiohttp.ClientHttpProxyError,
+                aiohttp.ClientResponseError):
             return 0
 
     async def get_car(self, url, session):

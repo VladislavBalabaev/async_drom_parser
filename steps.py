@@ -215,7 +215,7 @@ def execute_pages_parsing(continue_session=False):
     return 1
 
 
-# URLS PARSING #
+# URLS PARSING # -------------------------------------------------------------------------------------------------------
 @timer
 def execute_urls_parsing(continue_session=True, tqdm_=True):
     if continue_session:
@@ -267,7 +267,7 @@ def execute_urls_parsing(continue_session=True, tqdm_=True):
     return 1
 
 
-# PROXIES PARSING #
+# PROXIES PARSING # ----------------------------------------------------------------------------------------------------
 def get_proxies_from_hideme(**kwargs):
     PL = ProxiesList(**kwargs)  # port='3128'
     return [f"{i['ip_address']}:{i['port']}" for i in PL.get()]
@@ -337,7 +337,7 @@ def execute_proxies_parsing(search_with_previous=True, n_proxies=15):
     return 1
 
 
-# CARS PARSING #
+# CARS PARSING # -------------------------------------------------------------------------------------------------------
 @timer
 def execute_cars_parsing(continue_session=True, timeout=2 * 60, n_workers=49, tqdm_=True, print_=True):
     start_time = datetime.datetime.now()
@@ -405,7 +405,7 @@ def execute_cars_parsing(continue_session=True, timeout=2 * 60, n_workers=49, tq
     return 1
 
 
-# CARS PROCESSING #
+# CARS PROCESSING # ----------------------------------------------------------------------------------------------------
 @timer
 def execute_cars_processing():
     df = pd.read_csv(f'{data_path}/dataframes/all/cars_ready.tsv', encoding='utf-16', sep='\t')
@@ -451,15 +451,16 @@ def execute_cars_processing():
     df['city_from_title'] = df['ad_name'].apply(lambda x: x[x.index('год в') + 6:])
     df.drop('ad_name', axis=1, inplace=True)
 
-    loc = Nominatim(user_agent="GetLoc")
+    nomin = Nominatim(user_agent="GetLoc")
 
     @gen_cache(f'{data_path}/cache/get_geocode.pkl')
-    def get_geocode(location, nomin):
+    def get_geocode(location):
+        nonlocal nomin
         return nomin.geocode(location)
 
     df['location'] = df['city'] \
         .apply(lambda x: x[x.index(':') + 2:] + ', Россия') \
-        .apply(lambda x: get_geocode(x, nomin=loc))
+        .apply(lambda x: get_geocode(x))
 
     morph = pymorphy2.MorphAnalyzer()
 
@@ -470,7 +471,7 @@ def execute_cars_processing():
 
     df.loc[df['location'].isna(), 'location'] = df.loc[df['location'].isna(), 'city_from_title'] \
         .apply(lambda x: normal_form(x) + ', Россия') \
-        .apply(lambda x: get_geocode(x, nomin=loc))
+        .apply(lambda x: get_geocode(x))
 
     df = df[~df['location'].isna()]
     df = df[df.location.apply(lambda x: 'Россия' in x[0])]
@@ -529,7 +530,7 @@ def execute_cars_processing():
     df['mileage_new_car'] = df['mileage, km'].apply(lambda x: True if 'новый автомобиль' in str(x) else False)
     df.drop('mileage, km', axis=1, inplace=True)
 
-    # DATE OF PARSING
+    # DATE locOF PARSING
     df['date_of_parsing'] = pd.to_datetime('today').strftime('%Y-%m-%d %H:%M:%S')
 
     # ORDER IN DF
