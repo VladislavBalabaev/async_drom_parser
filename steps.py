@@ -410,6 +410,8 @@ def execute_cars_parsing(continue_session=True, timeout=2 * 60, n_workers=49, tq
 # CARS PROCESSING # ----------------------------------------------------------------------------------------------------
 @timer
 def execute_cars_processing():
+    standard_tqdm.pandas()
+
     df = pd.read_csv(f'{data_path}/dataframes/all/cars_ready.tsv', encoding='utf-16', sep='\t')
 
     df['Пробег, км'] = df['Пробег, км'].fillna(df['Пробег'])
@@ -474,15 +476,15 @@ def execute_cars_processing():
     df['location'] = df['city'] \
         .apply(lambda x: x[x.index(':') + 2:]) \
         .apply(lambda x: x[x.index(' в ') + len(' в '):] if ' в ' in x else x) \
-        .apply(lambda x: normal_form(x)) \
-        .apply(lambda x: get_geocode(x + ', Россия'))
+        .progress_apply(lambda x: normal_form(x)) \
+        .progress_apply(lambda x: get_geocode(x + ', Россия'))
 
     print(f'city is checked')
 
     df.loc[df['location'].isna(), 'location'] = df.loc[df['location'].isna(), 'city_from_title'] \
         .apply(lambda x: x[x.index(' в ') + len(' в '):] if ' в ' in x else x) \
-        .apply(lambda x: normal_form(x)) \
-        .apply(lambda x: get_geocode(x + ', Россия'))
+        .progress_apply(lambda x: normal_form(x)) \
+        .progress_apply(lambda x: get_geocode(x + ', Россия'))
 
     print(f'city_from_title is checked')
 
