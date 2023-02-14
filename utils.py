@@ -56,12 +56,12 @@ def gen_cache(dict_name):
             except (NameError, KeyError):
                 dict_ = {}
 
-            try:
-                with open(dict_name, 'rb') as file:
-                    dict_[f'{func.__name__}'] = pickle.load(file)
-            except (FileNotFoundError, EOFError):
-                rewrite_pkl(dict_name, {})
-                dict_[f'{func.__name__}'] = {}
+                try:
+                    with open(dict_name, 'rb') as file:
+                        dict_[f'{func.__name__}'] = pickle.load(file)
+                except (FileNotFoundError, EOFError):
+                    rewrite_pkl(dict_name, {})
+                    dict_[f'{func.__name__}'] = {}
 
             all_args = f'{args} {kwargs.keys()} {kwargs.values()}'
 
