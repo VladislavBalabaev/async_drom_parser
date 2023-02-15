@@ -33,18 +33,32 @@ ech = enchant.Dict('en_US')
 @gen_cache(f'{data_path}/cache/translator.pkl')
 def translator(x, source='russian', target='english'):
     global ech
-    if ech.check(x):
+
+    if not x:
+        return x
+    elif ech.check(x):
         return x
     else:
         return GoogleTranslator(source=source, target=target).translate(x)
 
 
 def check_exist(url, http):
-    for _ in range(3):
-        resp = http.request(url, 'HEAD')
-        if int(resp[0]['status']) == 200:
-            return True
-    return False
+    try:
+        i = 0
+        while True:
+            resp = http.request(url, 'HEAD')
+            status = int(resp[0]['status'])
+            if status == 404:
+                return False
+            elif status == 200:
+                return True
+
+            i += 1
+            if i != 0 and not i % 10:
+                print('Please, heck your internet connection.')
+    except TimeoutError:
+        http_new = httplib2.Http()
+        return check_exist(url, http_new)
 
 
 def check_class_and_exists(urlfor, h_, class_needed):
@@ -226,6 +240,9 @@ def execute_urls_parsing(continue_session=True, tqdm_=True):
 
         with open(f'{data_path}/urls/current/urls_of_pages.pkl', 'rb') as f:
             urls_of_pages = pickle.load(f)
+        if not urls_of_pages:
+            '!#All pages were parsed#!'
+            return 1
     else:
         urls_of_cars = []
 
@@ -494,6 +511,8 @@ def execute_cars_processing():
 
     df['location_latitude'] = df['location'].apply(lambda x: x[1][0])
     df['location_longitude'] = df['location'].apply(lambda x: x[1][1])
+    df['state_rus'] = df['location'].apply(lambda x: x.raw['address']['state'] if 'state' in x.raw['address'] else None)
+    df['state_eng'] = df['state_rus'].apply(lambda x: translator(x).lower() if x else x)
     df['location'] = df['location'].apply(lambda x: x[0])
 
     df['city_ad'] = df['city']
@@ -545,14 +564,14 @@ def execute_cars_processing():
     df['mileage_new_car'] = df['mileage, km'].apply(lambda x: True if 'новый автомобиль' in str(x) else False)
     df.drop('mileage, km', axis=1, inplace=True)
 
-    # DATE locOF PARSING
+    # DATE OF PARSING
     df['date_of_parsing'] = pd.to_datetime('today').strftime('%Y-%m-%d %H:%M:%S')
 
     # ORDER IN DF
     df = df[['price', 'estimate_of_price',
              'brand_model', 'brand_model_rus', 'brand', 'model', 'estimate_of_the_model',
              'year_of_car', 'date_of_ad', 'num_of_views',
-             'location', 'city', 'location_latitude', 'location_longitude', 'city_ad', 'city_from_title',
+             'location', 'state_rus', 'state_eng', 'city', 'location_latitude', 'location_longitude', 'city_ad', 'city_from_title',
              'power', 'gearbox', 'drive', 'color', 'wheel', 'body_type',
              'engine_type', 'engine_gas_equipment', 'engine_hybrid', 'engine_liters',
              'mileage', 'no_mileage_in_RF', 'mileage_new_car',
