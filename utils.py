@@ -6,6 +6,7 @@ import os
 import pickle
 import datetime
 from functools import wraps
+from deep_translator import GoogleTranslator
 
 
 data_path = '/home/balabaev/All/WORK/1_at_NSU/2_Market_of_cars/Drom/data'
@@ -72,3 +73,15 @@ def gen_cache(dict_name):
             return dict_[f'{func.__name__}'][all_args]
         return wrapper
     return decorate
+
+
+@gen_cache(f'{data_path}/cache/translator.pkl')
+def translator(x, source='russian', target='english'):
+    global ech
+
+    if not x:
+        return x
+    elif ech.check(x):
+        return x
+    else:
+        return GoogleTranslator(source=source, target=target).translate(x)

@@ -1,6 +1,4 @@
-import geopy.exc
-
-from utils import data_path, rewrite_pkl, timer, gen_cache
+from utils import *
 from classes import UrlsParser, CarsParser
 import httplib2
 import proxy_parser
@@ -15,7 +13,7 @@ import datetime
 import re
 import pymorphy2
 import pandas as pd
-from deep_translator import GoogleTranslator
+import geopy.exc
 from bs4 import BeautifulSoup
 from random import random
 from hideme.proxy_collector import ProxiesList
@@ -30,50 +28,37 @@ h = httplib2.Http()
 ech = enchant.Dict('en_US')
 
 
-@gen_cache(f'{data_path}/cache/translator.pkl')
-def translator(x, source='russian', target='english'):
-    global ech
-
-    if not x:
-        return x
-    elif ech.check(x):
-        return x
-    else:
-        return GoogleTranslator(source=source, target=target).translate(x)
-
-
-def check_exist(url, http):
-    try:
-        i = 0
-        while True:
-            resp = http.request(url, 'HEAD')
-            status = int(resp[0]['status'])
-            if status == 404:
-                return False
-            elif status == 200:
-                return True
-
-            i += 1
-            if i != 0 and not i % 10:
-                print('Please, heck your internet connection.')
-    except TimeoutError:
-        http_new = httplib2.Http()
-        return check_exist(url, http_new)
-
-
-def check_class_and_exists(urlfor, h_, class_needed):
-    def check_class(url, class_):
-        soup = BeautifulSoup(requests.get(url=url).text, 'html.parser')
-        return bool(soup.find_all(class_=class_))
-
-    return check_exist(url=urlfor, http=h_) and check_class(url=urlfor, class_=class_needed)
-
-
 @timer
 def execute_pages_parsing(continue_session=False):
     global url0
     global h
     global ech
+
+    def check_exist(url, http):
+        try:
+            i = 0
+            while True:
+                resp = http.request(url, 'HEAD')
+                status = int(resp[0]['status'])
+                if status == 404:
+                    return False
+                elif status == 200:
+                    return True
+
+                i += 1
+                if i != 0 and not i % 10:
+                    print('Please, heck your internet connection.')
+        except TimeoutError:
+            http_new = httplib2.Http()
+            return check_exist(url, http_new)
+
+    def check_class_and_exists(urlfor, h_, class_needed):
+        def check_class(url, class_):
+            soup = BeautifulSoup(requests.get(url=url).text, 'html.parser')
+            return bool(soup.find_all(class_=class_))
+
+        return check_exist(url=urlfor, http=h_) and check_class(url=urlfor, class_=class_needed)
+
 
     # PARAMETERS
     if continue_session:
